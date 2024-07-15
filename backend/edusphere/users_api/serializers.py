@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 from rest_framework import serializers
 from .models import Profile
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from .models import OTP
 
 class ProfileSerializer(serializers.ModelSerializer):
     eligibility_document = serializers.FileField(write_only=True, required=False)
@@ -67,3 +68,10 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField()
+
+
+class OTPSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OTP
+        fields = ['email', 'otp', 'created_at']
+

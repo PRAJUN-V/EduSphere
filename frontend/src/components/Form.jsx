@@ -14,16 +14,97 @@ export const Form = ({ route, method }) => {
     const [email, setEmail] = useState("");
     const [profilePicture, setProfilePicture] = useState(null);
     const [role, setRole] = useState("student"); // State for role selection, default to student
+    const [otp, setOtp] = useState("");
     const [loading, setLoading] = useState(false);
+    const [step, setStep] = useState(1); // State to manage form steps
     const navigate = useNavigate();
 
     const isLogin = method === "login";
     const formTitle = isLogin ? "Login" : "Register";
 
+    const handleSendOTP = async () => {
+        setLoading(true);
+        try {
+            const res = await api.post('/generate-otp/', { email });
+            if (res.status === 201) {
+                toast.success('OTP sent to your email.');
+                setStep(2);
+            }
+        } catch (error) {
+            toast.error('Error sending OTP');  // Ensure the error message matches backend response handling
+            console.error('Error sending OTP:', error);  // Log detailed error for debugging
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
+    const handleVerifyOTP = async () => {
+        setLoading(true);
+        try {
+            const res = await api.post('/verify-otp/', { email, otp });
+            if (res.status === 200) {
+                toast.success('OTP verified successfully.');
+                // Proceed with login or registration after OTP verification
+                if (isLogin) {
+                    await handleSubmit(); // Only for login, proceed with login after OTP verification
+                } else {
+                    await handleRegister(); // For registration, proceed with registration after OTP verification
+                }
+            }
+        } catch (error) {
+            toast.error('Invalid OTP or OTP has expired.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleSubmit = async (e) => {
         setLoading(true);
         e.preventDefault();
 
+        try {
+            const formData = new FormData();
+            formData.append('username', username);
+            formData.append('password', password);
+
+            const res = await api.post(route, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            const { access, refresh } = res.data;
+            localStorage.setItem(ACCESS_TOKEN, access);
+            localStorage.setItem(REFREST_TOKEN, refresh);
+
+            const decoded = jwtDecode(access);
+            const userRole = decoded.role;
+
+            switch (userRole) {
+                case 'admin':
+                    navigate('/admin/dashboard');
+                    break;
+                case 'student':
+                    navigate('/');
+                    break;
+                case 'instructor':
+                    navigate('/instructor/dashboard');
+                    break;
+                default:
+                    navigate('/login');
+                    break;
+            }
+        } catch (error) {
+            toast.error('Login failed. Please check your credentials.');
+            console.error('Login Error:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRegister = async () => {
+        setLoading(true);
         try {
             const formData = new FormData();
             formData.append('username', username);
@@ -34,7 +115,7 @@ export const Form = ({ route, method }) => {
             if (profilePicture) {
                 formData.append('profile.profile_picture', profilePicture);
             }
-            formData.append('role', role); // Append role to form data
+            formData.append('role', role);
 
             const res = await api.post(route, formData, {
                 headers: {
@@ -42,33 +123,10 @@ export const Form = ({ route, method }) => {
                 },
             });
 
-            if (isLogin) {
-                const { access, refresh } = res.data;
-                localStorage.setItem(ACCESS_TOKEN, access);
-                localStorage.setItem(REFREST_TOKEN, refresh);
-
-                const decoded = jwtDecode(access);
-                const userRole = decoded.role;
-
-                switch (userRole) {
-                    case 'admin':
-                        navigate('/admin/dashboard');
-                        break;
-                    case 'student':
-                        navigate('/');
-                        break;
-                    case 'instructor':
-                        navigate('/instructor/dashboard');
-                        break;
-                    default:
-                        navigate('/login');
-                        break;
-                }
-            } else {
-                navigate("/login");
-            }
+            toast.success('Registration successful');
+            navigate("/login");
         } catch (error) {
-            toast.error('Invalid username or password');
+            toast.error('Registration failed');
         } finally {
             setLoading(false);
         }
@@ -76,96 +134,106 @@ export const Form = ({ route, method }) => {
 
     return (
         <div className="flex font-poppins items-center justify-center min-h-screen w-screen dark:bg-gray-900">
-            <ToastContainer /> {/* ToastContainer for toast notifications */}
+            <ToastContainer />
             <div className="grid gap-8 overflow-y-auto">
                 <div className="border-[20px] border-transparent rounded-[20px] dark:bg-gray-900 bg-white shadow-lg xl:p-10 2xl:p-10 lg:p-10 md:p-10 sm:p-2 m-2">
-                    <form onSubmit={handleSubmit} className="max-w-md mx-auto p-8 bg-white shadow-md rounded-lg">
+                    <form onSubmit={(e) => e.preventDefault()} className="max-w-md mx-auto p-8 bg-white shadow-md rounded-lg">
                         <h1 className="text-2xl font-bold text-gray-600 mb-6 text-center">{formTitle}</h1>
 
-                        <input
-                            className="form-input w-full mb-1 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            type="text"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            placeholder="Username"
-                            required
-                        />
-
-                        <input
-                            className="form-input w-full mb-1 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder="Password"
-                            required
-                        />
-
-                        {!isLogin && (
+                        {step === 1 && (
                             <>
                                 <input
                                     className="form-input w-full mb-1 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     type="text"
-                                    value={firstName}
-                                    onChange={(e) => setFirstName(e.target.value)}
-                                    placeholder="First Name"
+                                    autoComplete="off"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    placeholder="Username"
                                     required
+                                   
                                 />
 
                                 <input
                                     className="form-input w-full mb-1 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    type="text"
-                                    value={lastName}
-                                    onChange={(e) => setLastName(e.target.value)}
-                                    placeholder="Last Name"
+                                    type="password"
+                                    autoComplete="new-password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="Password"
                                     required
                                 />
 
-                                <input
-                                    className="form-input w-full mb-1 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="Email"
-                                    required
-                                />
+                                {!isLogin && (
+                                    <>
+                                        <input
+                                            className="form-input w-full mb-1 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            placeholder="Email"
+                                            required
+                                        />
 
-                                <div className="mb-4">
-                                    <label className="block text-gray-700 text-sm font-bold mb-1">
-                                        Register as :
-                                    </label>
-                                    <select
-                                        className="form-select w-full mb-1 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        value={role}
-                                        onChange={(e) => setRole(e.target.value)}
-                                        required
-                                    >
-                                        <option value="student">Student</option>
-                                        <option value="instructor">Instructor</option>
-                                    </select>
-                                </div>
+                                        <div className="mb-4">
+                                            <label className="block text-gray-700 text-sm font-bold mb-1">
+                                                Register as :
+                                            </label>
+                                            <select
+                                                className="form-select w-full mb-1 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                value={role}
+                                                onChange={(e) => setRole(e.target.value)}
+                                                required
+                                            >
+                                                <option value="student">Student</option>
+                                                <option value="instructor">Instructor</option>
+                                            </select>
+                                        </div>
 
-                                <div>
-                                    <label className="block text-gray-700 text-sm font-bold mb-1">
-                                        Upload Profile Picture
-                                    </label>
-                                    <input
-                                        className="form-input w-full mb-1 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        type="file"
-                                        onChange={(e) => setProfilePicture(e.target.files[0])}
-                                        accept="image/*"
-                                        required
-                                    />
-                                </div>
+                                        <div>
+                                            <label className="block text-gray-700 text-sm font-bold mb-1">
+                                                Upload Profile Picture
+                                            </label>
+                                            <input
+                                                className="form-input w-full mb-1 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                type="file"
+                                                onChange={(e) => setProfilePicture(e.target.files[0])}
+                                                accept="image/*"
+                                            />
+                                        </div>
+                                    </>
+                                )}
+
+                                <button
+                                    className="form-button w-full py-3 bg-gray-500 text-white font-semibold rounded-md hover:bg-blue-500 transition duration-300"
+                                    type="button"
+                                    onClick={isLogin ? handleSubmit : handleSendOTP} // Trigger handleSubmit for login, handleSendOTP for registration
+                                    disabled={loading}
+                                >
+                                    {formTitle}
+                                </button>
                             </>
                         )}
 
-                        <button
-                            className="form-button w-full py-3 bg-gray-500 text-white font-semibold rounded-md hover:bg-blue-500 transition duration-300"
-                            type="submit"
-                            disabled={loading}
-                        >
-                            {formTitle}
-                        </button>
+                        {step === 2 && (
+                            <>
+                                <input
+                                    className="form-input w-full mb-1 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    type="text"
+                                    value={otp}
+                                    onChange={(e) => setOtp(e.target.value)}
+                                    placeholder="Enter OTP"
+                                    required
+                                />
+                                <button
+                                    className="form-button w-full py-3 bg-gray-500 text-white font-semibold rounded-md hover:bg-blue-500 transition duration-300"
+                                    type="button"
+                                    onClick={handleVerifyOTP}
+                                    disabled={loading}
+                                >
+                                    Verify OTP
+                                </button>
+                            </>
+                        )}
                     </form>
 
                     <div className="flex flex-col mt-4 items-center justify-center text-sm">
@@ -194,5 +262,4 @@ export const Form = ({ route, method }) => {
         </div>
     );
 };
-
 export default Form;

@@ -2,7 +2,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from users_api.views import CustomRegisterView, CustomLoginView, CreateProfileView, UpdateProfileView, CustomTokenObtainPairView
+from users_api.views import CustomRegisterView, CustomLoginView, CreateProfileView, UpdateProfileView, CustomTokenObtainPairView, GenerateOTPView, VerifyOTPView
 from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
@@ -14,4 +14,6 @@ urlpatterns = [
     path("users_api/token/refresh/", TokenRefreshView.as_view(), name="refresh"),  # Refresh token endpoint
     path("users_api/profile/", UpdateProfileView.as_view(), name="profile"),  # Profile endpoint
     path("users_api-auth/", include("rest_framework.urls")),  # DRF authentication URLs
+    path('generate-otp/', GenerateOTPView.as_view(), name='generate-otp'),
+    path('verify-otp/', VerifyOTPView.as_view(), name='verify-otp'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

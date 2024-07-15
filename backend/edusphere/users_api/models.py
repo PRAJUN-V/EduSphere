@@ -38,6 +38,8 @@
 
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
+import datetime
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -52,4 +54,13 @@ class Profile(models.Model):
 
     def __str__(self):
         return self.user.username
+
+class OTP(models.Model):
+    email = models.EmailField()
+    otp = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def is_valid(self):
+        now = timezone.now()
+        return now < self.created_at + datetime.timedelta(minutes=10)  # OTP is valid for 10 minutes
 

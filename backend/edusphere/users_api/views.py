@@ -8,6 +8,13 @@ from django.contrib.auth import authenticate
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import UserSerializer, LoginSerializer, CustomTokenObtainPairSerializer, ProfileSerializer
 from .models import Profile
+from rest_framework import status
+from .models import OTP
+from .serializers import OTPSerializer
+import random
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
@@ -76,4 +83,61 @@ class CustomLoginView(generics.GenericAPIView):
             token_serializer.is_valid(raise_exception=True)
             return Response(token_serializer.validated_data, status=status.HTTP_200_OK)
         return Response({"detail": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+class GenerateOTPView(APIView):
+    authentication_classes = []  # Disable authentication
+    permission_classes = []      # Disable permission
+
+    def post(self, request):
+        email = request.data.get('email')
+        if not email:
+            return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        otp = ''.join(random.choices('0123456789', k=6))
+        sender_email = "prajun0604@gmail.com"
+        receiver_email = email
+        password = "fgmx pzdh xnxz yojz"  # Use your app password here
+        subject = "OTP for user registration"
+        body = f"OTP : {otp}"
+
+        # Create the MIME object
+        message = MIMEMultipart()
+        message["From"] = sender_email
+        message["To"] = receiver_email
+        message["Subject"] = subject
+
+        # Attach the body to the email
+        message.attach(MIMEText(body, "plain"))
+
+        # Establish a connection to the SMTP server (in this case, Gmail)
+        try:
+            with smtplib.SMTP("smtp.gmail.com", 587) as server:
+                server.starttls()
+                server.login(sender_email, password)
+                server.sendmail(sender_email, receiver_email, message.as_string())
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # Save the OTP in the database
+        otp_instance = OTP.objects.create(email=email, otp=otp)
+        serializer = OTPSerializer(otp_instance)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+class VerifyOTPView(APIView):
+    authentication_classes = []  # Disable authentication
+    permission_classes = []      # Disable permission
+
+    def post(self, request):
+        email = request.data.get('email')
+        otp = request.data.get('otp')
+        try:
+            otp_instance = OTP.objects.get(email=email, otp=otp)
+            if otp_instance.is_valid():
+                return Response({'message': 'OTP is valid'}, status=status.HTTP_200_OK)
+            else:
+                return Response({'error': 'OTP has expired'}, status=status.HTTP_400_BAD_REQUEST)
+        except OTP.DoesNotExist:
+            return Response({'error': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST)
 
