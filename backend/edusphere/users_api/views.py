@@ -98,8 +98,8 @@ class GenerateOTPView(APIView):
         sender_email = "prajun0604@gmail.com"
         receiver_email = email
         password = "fgmx pzdh xnxz yojz"  # Use your app password here
-        subject = "OTP for user registration"
-        body = f"OTP : {otp}"
+        subject = "EduSphere registration One Time Password"
+        body = f"OTP to register in EduSphere : {otp}\nValid for 1 minute."
 
         # Create the MIME object
         message = MIMEMultipart()

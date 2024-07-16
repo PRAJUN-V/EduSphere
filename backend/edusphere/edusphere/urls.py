@@ -16,4 +16,7 @@ urlpatterns = [
     path("users_api-auth/", include("rest_framework.urls")),  # DRF authentication URLs
     path('generate-otp/', GenerateOTPView.as_view(), name='generate-otp'),
     path('verify-otp/', VerifyOTPView.as_view(), name='verify-otp'),
+    path('admin_panel/', include('admin_panel.urls')),
+    path('instructor/', include('instructor.urls'))
+
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

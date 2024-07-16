@@ -11,6 +11,10 @@ import { Profile } from "./pages/users/Profile";
 import { useDispatch } from "react-redux";
 import { setUser, clearUser } from "./redux/user";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
+import { BecomeAnInstructor } from "./pages/users/BecomeAnInstructor";
+import { RequestToBecomeInstructor } from "./pages/admin/RequestToBecomeInstructor";
+import { CategoryAdd } from "./pages/admin/CategoryAdd";
+import { CategoryEdit } from "./pages/admin/CategoryEdit";
 
 function Logout() {
   const dispatch = useDispatch();
@@ -74,11 +78,37 @@ function App() {
           </ProtectedRoute>
         } />
 
+        <Route path="/admin/request_to_become_instructor" element={
+          <ProtectedRoute requiredRole="admin">
+            <RequestToBecomeInstructor />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin/category_add" element={
+          <ProtectedRoute requiredRole="admin">
+            <CategoryAdd />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin/category_edit" element={
+          <ProtectedRoute requiredRole="admin">
+            <CategoryEdit />
+          </ProtectedRoute>
+        } />
+
         <Route path="/student/dashboard" element={
           <ProtectedRoute requiredRole="student">
             <Home />
           </ProtectedRoute>
         } />
+
+        <Route path="/student/become_an_instructor" element={
+          <ProtectedRoute requiredRole="student">
+            <BecomeAnInstructor />
+          </ProtectedRoute>
+        } />
+
+
       </Routes>
     </BrowserRouter>
   );

@@ -7,7 +7,7 @@ export const SideBar = () => {
     return (
         <div className="bg-blue-500 text-white h-screen w-64">
             {/* Logo and Name */}
-            <div className="flex items-center justify-center p-1">
+            <div className="flex items-center justify-center p-0">
                 <img src={logo} alt="Logo" className="h-20 mr-2" />
                 <span className="text-xl font-bold">EduSphere</span>
             </div>
@@ -30,12 +30,12 @@ export const SideBar = () => {
                         </Link>
                     </li>
                     <li>
-                        <Link to="/admin/categories" className="block py-2 px-4 hover:bg-blue-600">
+                        <Link to="/admin/category_add" className="block py-2 px-4 hover:bg-blue-600">
                             <List className="inline-block mr-2" /> Categories
                         </Link>
                     </li>
                     <li>
-                        <Link to="/admin/requests" className="block py-2 px-4 hover:bg-blue-600">
+                        <Link to="/admin/request_to_become_instructor" className="block py-2 px-4 hover:bg-blue-600">
                             <Layers className="inline-block mr-2" /> Requests
                         </Link>
                     </li>

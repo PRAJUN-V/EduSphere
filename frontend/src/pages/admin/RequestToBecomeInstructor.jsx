@@ -2,15 +2,14 @@ import React from 'react'
 import { SideBar } from './common/SideBar'
 import Header from '../instructor/common/Header'
 
-export const AdminDashboard = () => {
-  return (
-    <div className="flex">
+export const RequestToBecomeInstructor = () => {
+    return (
+        <div className="flex">
             <SideBar />
             <div className="flex-grow flex flex-col">
                 <Header />
-                <div>Dashboard</div>
+                {/* Other content */}
             </div>
         </div>
-  )
+    )
 }
-
